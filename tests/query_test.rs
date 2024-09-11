@@ -1,5 +1,5 @@
-extern crate jsonapi;
 extern crate env_logger;
+extern crate jsonapi;
 
 use jsonapi::query::*;
 
@@ -254,7 +254,7 @@ fn can_parse_and_use_defaults_for_invalid_values() {
 
     match query.sort {
         None => assert!(true),
-        Some(_) => assert!(false)
+        Some(_) => assert!(false),
     }
 
     match query.filter {
@@ -370,7 +370,7 @@ fn can_generate_string_sort_multiple() {
         include: None,
         fields: None,
         page: None,
-        sort: Some(vec!["-name".into(),"created".into()]),
+        sort: Some(vec!["-name".into(), "created".into()]),
         filter: None,
     };
 
@@ -383,7 +383,7 @@ fn can_generate_string_sort_multiple() {
 fn can_generate_string_fields() {
     let _ = env_logger::try_init();
     type VecOfStrings = Vec<String>;
-    let mut fields = std::collections::HashMap::<String, VecOfStrings>::new();
+    let mut fields = std::collections::BTreeMap::<String, VecOfStrings>::new();
 
     fields.insert("user".into(), vec!["name".into()]);
 
@@ -405,7 +405,7 @@ fn can_generate_string_fields() {
 fn can_generate_string_fields_multiple_values() {
     let _ = env_logger::try_init();
     type VecOfStrings = Vec<String>;
-    let mut fields = std::collections::HashMap::<String, VecOfStrings>::new();
+    let mut fields = std::collections::BTreeMap::<String, VecOfStrings>::new();
 
     fields.insert("user".into(), vec!["name".into(), "dateofbirth".into()]);
 
@@ -427,7 +427,7 @@ fn can_generate_string_fields_multiple_values() {
 fn can_generate_string_fields_multiple_key_and_values() {
     let _ = env_logger::try_init();
     type VecOfStrings = Vec<String>;
-    let mut fields = std::collections::HashMap::<String, VecOfStrings>::new();
+    let mut fields = std::collections::BTreeMap::<String, VecOfStrings>::new();
 
     fields.insert("item".into(), vec!["title".into(), "description".into()]);
     fields.insert("user".into(), vec!["name".into(), "dateofbirth".into()]);
@@ -447,12 +447,8 @@ fn can_generate_string_fields_multiple_key_and_values() {
     //
 
     assert!(
-        query_string.eq(
-            "fields[item]=title,description&fields[user]=name,dateofbirth",
-        ) ||
-            query_string.eq(
-                "fields[user]=name,dateofbirth&fields[item]=title,description",
-            )
+        query_string.eq("fields[item]=title,description&fields[user]=name,dateofbirth",)
+            || query_string.eq("fields[user]=name,dateofbirth&fields[item]=title,description",)
     );
 }
 
@@ -460,7 +456,7 @@ fn can_generate_string_fields_multiple_key_and_values() {
 fn can_generate_string_filter() {
     let _ = env_logger::try_init();
     type VecOfStrings = Vec<String>;
-    let mut filter = std::collections::HashMap::<String, VecOfStrings>::new();
+    let mut filter = std::collections::BTreeMap::<String, VecOfStrings>::new();
 
     filter.insert("posts".into(), vec!["1".into()]);
 
@@ -482,7 +478,7 @@ fn can_generate_string_filter() {
 fn can_generate_string_filter_multiple_values() {
     let _ = env_logger::try_init();
     type VecOfStrings = Vec<String>;
-    let mut filter = std::collections::HashMap::<String, VecOfStrings>::new();
+    let mut filter = std::collections::BTreeMap::<String, VecOfStrings>::new();
 
     filter.insert("posts".into(), vec!["1".into(), "2".into()]);
 
@@ -504,7 +500,7 @@ fn can_generate_string_filter_multiple_values() {
 fn can_generate_string_filter_multiple_key_and_values() {
     let _ = env_logger::try_init();
     type VecOfStrings = Vec<String>;
-    let mut filter = std::collections::HashMap::<String, VecOfStrings>::new();
+    let mut filter = std::collections::BTreeMap::<String, VecOfStrings>::new();
 
     filter.insert("posts".into(), vec!["1".into(), "2".into()]);
     filter.insert("authors".into(), vec!["3".into(), "4".into()]);
@@ -524,12 +520,8 @@ fn can_generate_string_filter_multiple_key_and_values() {
     //
 
     assert!(
-        query_string.eq(
-            "filter[posts]=1,2&filter[authors]=3,4",
-        ) ||
-            query_string.eq(
-                "filter[authors]=3,4&filter[posts]=1,2",
-            )
+        query_string.eq("filter[posts]=1,2&filter[authors]=3,4",)
+            || query_string.eq("filter[authors]=3,4&filter[posts]=1,2",)
     );
 }
 

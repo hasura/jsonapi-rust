@@ -7,7 +7,7 @@ pub use crate::api::*;
 use crate::errors::*;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_value, to_value, Map, Value};
-pub use std::collections::HashMap;
+pub use std::collections::BTreeMap;
 
 /// A trait for any struct that can be converted from/into a
 /// [`Resource`](api/struct.Resource.tml). The only requirement is that your
@@ -187,7 +187,7 @@ where
         included: &Option<Resources>,
         visited_relationships: &Vec<&str>,
     ) -> ResourceAttributes {
-        let mut new_attrs = HashMap::new();
+        let mut new_attrs = BTreeMap::new();
         new_attrs.clone_from(&resource.attributes);
         new_attrs.insert("id".into(), resource.id.clone().into());
 
@@ -371,7 +371,7 @@ macro_rules! jsonapi_model {
             }
 
             fn build_relationships(&self) -> Option<Relationships> {
-                let mut relationships = HashMap::new();
+                let mut relationships = BTreeMap::new();
                 $(
                     relationships.insert(stringify!($has_one).into(),
                         Self::build_has_one(&self.$has_one)
