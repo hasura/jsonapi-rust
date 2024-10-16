@@ -4,8 +4,8 @@ use std::collections::BTreeMap;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct PageParams {
-    pub size: i64,
-    pub number: i64,
+    pub offset: i64,
+    pub limit: i64,
 }
 
 /// JSON-API Query parameters
@@ -97,10 +97,10 @@ fn ok_params_filter(o: &Value) -> Option<BTreeMap<String, Vec<String>>> {
 
 fn ok_params_page(o: &Value) -> PageParams {
     PageParams {
-        number: match o.pointer("/page/number") {
+        offset: match o.pointer("/page/offset") {
             None => {
                 warn!(
-                    "Query::from_params : No page/number found in {:?}, setting \
+                    "Query::from_params : No page/offset found in {:?}, setting \
                                    default 0",
                     o
                 );
@@ -112,7 +112,7 @@ fn ok_params_page(o: &Value) -> PageParams {
                         Some(y) => y.unwrap_or(0),
                         None => {
                             warn!(
-                                "Query::from_params : page/number found in {:?}, \
+                                "Query::from_params : page/offset found in {:?}, \
                                                not able not able to parse it - setting default 0",
                                 o
                             );
@@ -121,7 +121,7 @@ fn ok_params_page(o: &Value) -> PageParams {
                     }
                 } else {
                     warn!(
-                        "Query::from_params : page/number found in {:?}, but it is \
+                        "Query::from_params : page/offset found in {:?}, but it is \
                                        not an expected type - setting default 0",
                         o
                     );
@@ -129,10 +129,10 @@ fn ok_params_page(o: &Value) -> PageParams {
                 }
             }
         },
-        size: match o.pointer("/page/size") {
+        limit: match o.pointer("/page/limit") {
             None => {
                 warn!(
-                    "Query::from_params : No page/size found in {:?}, setting \
+                    "Query::from_params : No page/limit found in {:?}, setting \
                                    default 0",
                     o
                 );
@@ -144,7 +144,7 @@ fn ok_params_page(o: &Value) -> PageParams {
                         Some(y) => y.unwrap_or(0),
                         None => {
                             warn!(
-                                "Query::from_params : page/size found in {:?}, \
+                                "Query::from_params : page/limit found in {:?}, \
                                                not able not able to parse it - setting default 0",
                                 o
                             );
@@ -153,7 +153,7 @@ fn ok_params_page(o: &Value) -> PageParams {
                     }
                 } else {
                     warn!(
-                        "Query::from_params : page/size found in {:?}, but it is \
+                        "Query::from_params : page/limit found in {:?}, but it is \
                                        not an expected type - setting default 0",
                         o
                     );
@@ -183,7 +183,7 @@ impl Query {
     /// ```
     /// use jsonapi::query::Query;
     /// let query = Query::from_params("include=author&fields[articles]=title,\
-    ///                                 body&fields[people]=name&page[number]=3&page[size]=1");
+    ///                                 body&fields[people]=name&page[offset]=3&page[limit]=1");
     /// match query.include {
     ///     None => assert!(false),
     ///     Some(include) => {
@@ -216,15 +216,15 @@ impl Query {
     ///   include: Some(vec!["author".into()]),
     ///   fields: None,
     ///   page: Some(PageParams {
-    ///     size: 5,
-    ///     number: 10,
+    ///     limit: 5,
+    ///     offset: 10,
     ///   }),
     ///   sort: None,
     ///   filter: None,
     /// };
     ///
     /// let query_string = query.to_params();
-    /// assert_eq!(query_string, "include=author&page[size]=5&page[number]=10");
+    /// assert_eq!(query_string, "include=author&page[limit]=5&page[offset]=10");
     ///
     /// ```
     pub fn to_params(&self) -> String {
@@ -264,6 +264,6 @@ impl Query {
 
 impl PageParams {
     pub fn to_params(&self) -> String {
-        format!("page[size]={}&page[number]={}", self.size, self.number)
+        format!("page[limit]={}&page[offset]={}", self.limit, self.offset)
     }
 }
