@@ -16,7 +16,7 @@ pub struct Query {
     pub fields: Option<BTreeMap<String, Vec<String>>>,
     pub page: Option<PageParams>,
     pub sort: Option<Vec<String>>,
-    pub filter: Option<BTreeMap<String, Vec<String>>>,
+    pub filter: Option<Value>,
 }
 
 //
@@ -71,22 +71,15 @@ fn ok_params_sort(o: &Value) -> Option<Vec<String>> {
     }
 }
 
-fn ok_params_filter(o: &Value) -> Option<BTreeMap<String, Vec<String>>> {
+fn ok_params_filter(o: &Value) -> Option<Value> {
     match o.pointer("/filter") {
         None => None,
         Some(x) => {
-            if x.is_object() {
-                let mut tmp_filter = BTreeMap::<String, Vec<String>>::new();
-                if let Some(obj) = x.as_object() {
-                    for (key, value) in obj.iter() {
-                        let arr: Vec<String> = match value.as_str() {
-                            Some(string) => string.split(',').map(|s| s.to_string()).collect(),
-                            None => Vec::<String>::new(),
-                        };
-                        tmp_filter.insert(key.to_string(), arr);
-                    }
-                }
-                Some(tmp_filter)
+            dbg!(x.as_str());
+            let parsed_json: Value = serde_json::from_str(x.as_str()?).ok()?;
+
+            if parsed_json.is_object() {
+                Some(parsed_json.clone())
             } else {
                 warn!("Query::from_params : No filter found in {:?}", x);
                 None
@@ -249,9 +242,7 @@ impl Query {
         }
 
         if let Some(ref filter) = self.filter {
-            for (name, val) in filter.iter() {
-                params.push(format!("filter[{}]={}", name, val.join(",")));
-            }
+            params.push(format!("filter={}", filter))
         }
 
         if let Some(ref page) = self.page {

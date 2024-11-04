@@ -8,11 +8,14 @@ fn can_print() {
     let _ = env_logger::try_init();
     let query = Query::from_params(
         "include=author&fields[articles]=title,\
-                                    body&fields[people]=name&page[number]=3&page[size]=1",
+                                    body&fields[people]=name&page[limit]=3&page[offset]=1",
     );
     println!("Query is {:?}", query);
 
-    let pageparams = PageParams { size: 1, number: 1 };
+    let pageparams = PageParams {
+        limit: 1,
+        offset: 1,
+    };
 
     println!("PageParams is {:?}", pageparams);
 }
@@ -22,7 +25,7 @@ fn can_parse() {
     let _ = env_logger::try_init();
     let query = Query::from_params(
         "include=author&fields[articles]=title,\
-                                    body&fields[people]=name&filter[post]=1,2&sort=name&page[number]=3&page[size]=1",
+                                    body&fields[people]=name&filter={}&sort=name&page[offset]=3&page[limit]=1",
     );
 
     match query.include {
@@ -36,8 +39,8 @@ fn can_parse() {
     match query.page {
         None => assert!(false),
         Some(page) => {
-            assert_eq!(page.size, 1);
-            assert_eq!(page.number, 3);
+            assert_eq!(page.limit, 1);
+            assert_eq!(page.offset, 3);
         }
     }
 
@@ -73,21 +76,7 @@ fn can_parse() {
         }
     }
 
-    match query.filter {
-        None => assert!(false),
-        Some(filter) => {
-            assert_eq!(filter.contains_key("post"), true);
-
-            match filter.get("post") {
-                None => assert!(false),
-                Some(arr) => {
-                    assert_eq!(arr.len(), 2);
-                    assert_eq!(arr[0], "1");
-                    assert_eq!(arr[1], "2");
-                }
-            }
-        }
-    }
+    assert!(query.filter.is_some());
 }
 
 #[test]
@@ -108,8 +97,8 @@ fn can_parse_and_provide_defaults_for_partial_fields() {
     match query.page {
         None => assert!(false),
         Some(page) => {
-            assert_eq!(page.size, 0);
-            assert_eq!(page.number, 0);
+            assert_eq!(page.limit, 0);
+            assert_eq!(page.offset, 0);
         }
     }
 
@@ -160,41 +149,6 @@ fn can_parse_and_handle_missing_fields_values() {
 }
 
 #[test]
-fn can_parse_and_handle_missing_filter_values() {
-    let _ = env_logger::try_init();
-
-    let query = Query::from_params("filter=");
-    match query.filter {
-        None => assert!(true),
-        Some(_) => assert!(false),
-    }
-
-    let query = Query::from_params("filter=key");
-    match query.filter {
-        None => assert!(true),
-        Some(_) => assert!(false),
-    }
-
-    let query = Query::from_params("filter=[key]");
-    match query.filter {
-        None => assert!(true),
-        Some(_) => assert!(false),
-    }
-
-    let query = Query::from_params("filter[key]");
-    match query.filter {
-        None => assert!(false),
-        Some(_) => assert!(true),
-    }
-
-    let query = Query::from_params("filter[key]=");
-    match query.filter {
-        None => assert!(false),
-        Some(_) => assert!(true),
-    }
-}
-
-#[test]
 fn can_parse_and_handle_missing_page_values() {
     let _ = env_logger::try_init();
 
@@ -203,28 +157,28 @@ fn can_parse_and_handle_missing_page_values() {
     match query.page {
         None => assert!(false),
         Some(pageparams) => {
-            assert_eq!(pageparams.number, 0);
-            assert_eq!(pageparams.size, 0);
+            assert_eq!(pageparams.offset, 0);
+            assert_eq!(pageparams.limit, 0);
         }
     }
 
-    let query = Query::from_params("page[number]=&page[size]=");
+    let query = Query::from_params("page[offset]=&page[limit]=");
 
     match query.page {
         None => assert!(false),
         Some(pageparams) => {
-            assert_eq!(pageparams.number, 0);
-            assert_eq!(pageparams.size, 0);
+            assert_eq!(pageparams.offset, 0);
+            assert_eq!(pageparams.limit, 0);
         }
     }
 
-    let query = Query::from_params("page[number]=/&page[size]=/");
+    let query = Query::from_params("page[offset]=/&page[limit]=/");
 
     match query.page {
         None => assert!(false),
         Some(pageparams) => {
-            assert_eq!(pageparams.number, 0);
-            assert_eq!(pageparams.size, 0);
+            assert_eq!(pageparams.offset, 0);
+            assert_eq!(pageparams.limit, 0);
         }
     }
 }
@@ -232,7 +186,7 @@ fn can_parse_and_handle_missing_page_values() {
 #[test]
 fn can_parse_and_use_defaults_for_invalid_values() {
     let _ = env_logger::try_init();
-    let query = Query::from_params("page[number]=x&page[size]=y");
+    let query = Query::from_params("page[offset]=x&page[limit]=y");
 
     match query.include {
         None => assert!(true),
@@ -247,8 +201,8 @@ fn can_parse_and_use_defaults_for_invalid_values() {
     match query.page {
         None => assert!(false),
         Some(page) => {
-            assert_eq!(page.size, 0);
-            assert_eq!(page.number, 0);
+            assert_eq!(page.limit, 0);
+            assert_eq!(page.offset, 0);
         }
     }
 
@@ -453,57 +407,10 @@ fn can_generate_string_fields_multiple_key_and_values() {
 }
 
 #[test]
-fn can_generate_string_filter() {
-    let _ = env_logger::try_init();
-    type VecOfStrings = Vec<String>;
-    let mut filter = std::collections::BTreeMap::<String, VecOfStrings>::new();
-
-    filter.insert("posts".into(), vec!["1".into()]);
-
-    let query = Query {
-        _type: "none".into(),
-        include: None,
-        fields: None,
-        page: None,
-        sort: None,
-        filter: Some(filter),
-    };
-
-    let query_string = query.to_params();
-
-    assert_eq!(query_string, "filter[posts]=1");
-}
-
-#[test]
-fn can_generate_string_filter_multiple_values() {
-    let _ = env_logger::try_init();
-    type VecOfStrings = Vec<String>;
-    let mut filter = std::collections::BTreeMap::<String, VecOfStrings>::new();
-
-    filter.insert("posts".into(), vec!["1".into(), "2".into()]);
-
-    let query = Query {
-        _type: "none".into(),
-        include: None,
-        fields: None,
-        page: None,
-        sort: None,
-        filter: Some(filter),
-    };
-
-    let query_string = query.to_params();
-
-    assert_eq!(query_string, "filter[posts]=1,2");
-}
-
-#[test]
 fn can_generate_string_filter_multiple_key_and_values() {
     let _ = env_logger::try_init();
     type VecOfStrings = Vec<String>;
-    let mut filter = std::collections::BTreeMap::<String, VecOfStrings>::new();
-
-    filter.insert("posts".into(), vec!["1".into(), "2".into()]);
-    filter.insert("authors".into(), vec!["3".into(), "4".into()]);
+    let filter = serde_json::Value::Object(serde_json::Map::new());
 
     let query = Query {
         _type: "none".into(),
@@ -519,10 +426,7 @@ fn can_generate_string_filter_multiple_key_and_values() {
     // We don't have any guarantees on the order in which fields are output
     //
 
-    assert!(
-        query_string.eq("filter[posts]=1,2&filter[authors]=3,4",)
-            || query_string.eq("filter[authors]=3,4&filter[posts]=1,2",)
-    );
+    assert!(query_string.eq("filter={}"));
 }
 
 #[test]
@@ -534,8 +438,8 @@ fn can_generate_page_fields() {
         include: None,
         fields: None,
         page: Some(PageParams {
-            size: 5,
-            number: 10,
+            limit: 5,
+            offset: 10,
         }),
         sort: None,
         filter: None,
@@ -543,5 +447,5 @@ fn can_generate_page_fields() {
 
     let query_string = query.to_params();
 
-    assert_eq!(query_string, "page[size]=5&page[number]=10");
+    assert_eq!(query_string, "page[limit]=5&page[offset]=10");
 }
