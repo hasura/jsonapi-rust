@@ -75,7 +75,6 @@ fn ok_params_filter(o: &Value) -> Option<Value> {
     match o.pointer("/filter") {
         None => None,
         Some(x) => {
-            dbg!(x.as_str());
             let parsed_json: Value = serde_json::from_str(x.as_str()?).ok()?;
 
             if parsed_json.is_object() {
